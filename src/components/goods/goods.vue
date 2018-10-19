@@ -1,8 +1,9 @@
 <template>
-   <div class='goods'>
-       <div class="menu-wrapper">
+   <div>
+  <div class='goods'>
+       <div class="menu-wrapper" ref="menuWrapper">
          <ul>
-            <li v-for="(item,index) in goods" :key="index" class="menu-item"  @click="selectMenu(index,$event)">
+            <li v-for="(item,index) in goods" :key="index" class="menu-item"  @click="selectMenu(index,$event)" :class="{'current':currentIndex===index,'currnetbefore':currentIndex===index+1}" ref="menuList">
               <!-- :class="{current:currentIndex===index}" -->
               <div class="text">
                   <span v-show="item.type>0" class="icon" :class="classMap[item.type]"></span>
@@ -12,9 +13,9 @@
             </li>
          </ul>
        </div>
-       <div class="foods-wrapper">
+       <div class="foods-wrapper" ref="foodWrapper">
            <div class="box">
-                <div class="food-lists"  v-for="(item,index) in goods" :key="index">
+                <div class="food-lists"  v-for="(item,index) in goods" :key="index" ref="foodList">
                   <h1 class="title">{{item.name}}</h1>
                   <ul>
                      <li class="foot-item" v-for="(food,Index) in item.foods" :key="Index">
@@ -33,8 +34,8 @@
                             <s class="old" v-show="food.oldPrice">￥{{food.oldPrice}}</s>
                           </p>
                           <div class="cartcontrol-wrapper">
-                               <cartcontrol @add="addFood" :food="food"></cartcontrol>
-
+  
+                               <cartcontrol :food="food" @add="addFood"></cartcontrol>
                           </div>
                        </div>
                      </li>
@@ -42,14 +43,23 @@
                 </div> 
            </div>
        </div>
+       <shopcart ref="shopcart" :selectFoods="selectFoods" :deliveryPrice="seller.deliveryPrice" :minPrice="seller.minPrice"></shopcart>
    </div>
+   <!-- 商品详情 -->
+   <!-- <food @add="addFood" :food="selectedFood" ref="food"></food> -->
+   </div>
+ 
 </template>
 <style scoped lang="less">
 .goods {
   width: 100%;
   overflow: hidden;
-  position: relative;
+  // position: relative;
   display: flex;
+  position: absolute;
+  width: 100%;
+  top: 4.18rem;
+  bottom: 1.31rem;
   .menu-wrapper {
     flex: 0.21;
     background: #f3f5f7;
@@ -102,13 +112,23 @@
           bottom: 0;
           border-top: 0.5px solid rgba(7, 17, 27, 0.1);
         }
-      }
-      .menu-item:last-child {
-        &::after {
-          visibility: hidden;
-          display: none;
+        &.current {
+          background: #fff;
+          font-weight: 700;
+          &::after {
+            visibility: hidden;
+            display: none;
+          }
+        }
+        &.currnetbefore,
+        &:last-child {
+          &::after {
+            visibility: hidden;
+            display: none;
+          }
         }
       }
+      // .menu-item
     }
   }
   .foods-wrapper {
@@ -192,12 +212,11 @@
                   color: rgb(190, 200, 207);
                 }
               }
-              .cartcontrol-wrapper{
+              .cartcontrol-wrapper {
                 position: absolute;
                 right: 0.1rem;
-                bottom: -0.1rem;
-                width: 1.8rem;
-              
+                bottom: -0.2rem;
+                height: 0.66rem;
               }
             }
           }
@@ -209,14 +228,23 @@
 </style>
    
 <script type="text/ecmascript-6">
+import BScroll from "better-scroll";
 import cartcontrol from "../cartcontrol/cartcontrol";
 import shopcart from "../shopcart/shopcart";
 const ERR_OK = 0;
 
 export default {
+  props: {
+    seller: {
+      type: Object
+    }
+  },
   data() {
     return {
-      goods: []
+      length: 0,
+      goods: [],
+      scrollY: 0,
+      listHeight: []
     };
   },
   created() {
@@ -226,24 +254,99 @@ export default {
       if (response.errno === ERR_OK) {
         this.goods = response.data;
         console.log(this.goods);
-        //  this.$nextTick(()=>{
-
-        //  })
+        this.$nextTick(() => {
+          this._initScroll();
+          this._calculateHeight();
+        });
       }
     });
   },
+
   methods: {
     selectMenu(index, event) {
       if (!event._constructed) {
-        //阻止非Vue事件  如果是非vue事件 直接跳出
+        ///如果不存在这个属性,则为原生点击事件，不执行下面的函数(过滤原生事件)
         return;
       }
+      this.foodScroll.scrollToElement(this.$refs.foodList[index], 300);
+    },
+    addFood(target) {
+      // this._drop(target);
+      // console.log("hj");
+    },
+    _calculateHeight() {
+      let foodList = this.$refs.foodList;
+      let height = 0;
+      this.listHeight.push(height);
+      for (let i = 0; i < foodList.length; i++) {
+        height += foodList[i].clientHeight;
+        this.listHeight.push(height);
+      }
+      console.log(this.listHeight);
+      // console.log(foodList.length);
+    },
+    _initScroll() {
+      //确保每次创建完实例并且页面渲染完之后 都会刷新scroll
+      if (!this.menuScroll) {
+        this.menuScroll = new BScroll(this.$refs.menuWrapper, {
+          click: true,
+          tap: true
+        });
+      } else {
+        this.menuScroll.refresh();
+      }
+      if (!this.foodScroll) {
+        this.foodScroll = new BScroll(this.$refs.foodWrapper, {
+          click: true,
+          tap: true,
+          // 1 滚动的时候会派发scroll事件，会截流。2滚动的时候实时派发scroll事件，不会截流。 3除了实时派发scroll事件，在swipe的情况下仍然能实时派发scroll事件
+          probeType: 3
+        });
+      } else {
+        this.foodScroll.refresh();
+      }
+      this.foodScroll.on("scroll", pos => {
+        //  this.menuScroll.scrollToElement(this.$refs.menuList[2],300,true,true)
+        if (pos.y <= 0) {
+          this.scrollY = Math.abs(Math.round(pos.y));
+        }
+      });
+
+      // console.log(this.menuScroll);
+      // this.foodScroll
     }
   },
   computed: {
-   
+    selectFoods() {
+      let Foods = [];
+      this.goods.forEach(good => {
+        good.foods.forEach(food => {
+          if (food.count) {
+            Foods.push(food);
+          }
+        });
+      });
+      //Foods 为添加了购买数量之后的json数组
+      return Foods;
+    },
+    currentIndex() {
+      for (let i = 0; i < this.listHeight.length; i++) {
+        let H1 = this.listHeight[i];
+        let H2 = this.listHeight[i + 1];
+        if (!H2 || (this.scrollY >= H1 && this.scrollY < H2)) {
+          this.menuScroll.scrollToElement(
+            this.$refs.menuList[i],
+            300,
+            true,
+            true
+          );
+          return i;
+        }
+      }
+      return 0;
+    }
   },
-  components:{
+  components: {
     cartcontrol,
     shopcart
   }

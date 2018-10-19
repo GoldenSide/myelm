@@ -1,22 +1,21 @@
 <template>
-   <div class='star' :class="starType">
+   <div class='star' :class="starType" :style="{width:Width+'%'}">
        <!-- 我是star -->
-       <span  v-for="(itemclass,index) in itemClasses" :key="index" :class="itemclass" class="star-item">
+       <span  v-for="(itemclass,index) in itemClasses" :key="index" :class="itemclass" class="star-item" :style="{width:size+'rem',height:size+'rem'}">
        </span>
    </div>
 </template>
    
 <style scoped lang="less">
 .star {
-  width: 65%;
-  margin: 0.2rem auto;
   display: flex;
   justify-content: space-around;
+   vertical-align: top;
   .star-item {
     background-size: cover;
     background-repeat: no-repeat;
-    width: 0.6rem;
-    height: 0.6rem;
+    // width: 0.6rem;
+    // height: 0.6rem;
     &.on{
       background-image: url(../../assets/img/star_on.png) 
     }
@@ -41,6 +40,12 @@ export default {
     },
     score: {
       type: Number
+    },
+    Width:{
+      type:Number,
+      default(){
+        return 100
+      }
     }
   },
   computed: {
@@ -63,11 +68,17 @@ export default {
       while (result.length < 5) {
         result.push("off");
       }
-      console.log(result);
+      // console.log(result);
       return result;
     }
   },
-  created() {},
-  methods: {}
+  created() {
+    // refs不能实现动态绑定，因为在没有渲染完的时候还是没有的
+    // this.$refs.starStyle.style.width=size+'rem';
+    // this.$refs.starStyle.style.height=size+'rem';
+  },
+  methods: {
+    
+  }
 };
 </script>

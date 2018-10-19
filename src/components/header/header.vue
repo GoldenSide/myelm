@@ -39,8 +39,11 @@
                                 {{seller.name}}
                             </h1>
                             <div class="star-wrapper">
-                                <star :size='24' :score="seller.score"> 
+                                <div class="starbox">
+                                   <star :size='0.6' :Width='100' :score="seller.score"> 
                                 </star>
+                                </div>
+                               
                             </div>
                             <div class="title">
                              
@@ -131,28 +134,32 @@ export default {
       float: left;
       margin-left: 0.4rem;
       .title {
-        margin: 0.08rem 0 0.13rem 0;
+        margin-bottom: 0.12rem;
         overflow: hidden;
+        text-align: left;
         .brand {
-          display: inline-block;
+          line-height: 0.44rem;
+          float: left;
           width: 0.8rem;
           height: 0.44rem;
+          vertical-align: middle;
           background: url("../../assets/img/brand.png");
           background-size: 100% 100%;
           background-repeat: no-repeat;
         }
         .name {
-          display: inline-block;
-          vertical-align: top;
+          // float: left;
+          // display: inline-block;
+          vertical-align: middle;
           margin-left: 0.2rem;
           font-size: 0.39rem;
           height: 0.44rem;
-          line-height: 0.44rem;
+          line-height: 0.51rem;
           font-weight: 600;
         }
       }
       .description {
-        margin-bottom: 0.24rem;
+        margin-bottom: 0.21rem;
         text-align: left;
         font-size: 0.32rem;
       }
@@ -163,7 +170,9 @@ export default {
           width: 0.3rem;
           height: 0.3rem;
           background-size: cover;
+          vertical-align: middle;
           background-repeat: no-repeat;
+          vertical-align: middle;
           &.decrease {
             background-image: url("../../assets/img/decrease.png");
           }
@@ -181,9 +190,10 @@ export default {
           }
         }
         .text {
-          line-height: 0.3rem;
+          line-height: 0.314rem;
           font-size: 0.28rem;
-          vertical-align: top;
+          vertical-align: middle;
+        
         }
       }
     }
@@ -251,7 +261,7 @@ export default {
   }
   .detail {
     position: fixed;
-    z-index: 100;
+    z-index: 1000;
     top: 0;
     left: 0;
     width: 100%;
@@ -278,6 +288,13 @@ export default {
           line-height: 1rem;
           font-size: 0.48rem;
           font-weight: 700;
+        }
+        .star-wrapper{
+          padding: 0.2rem 0;
+          .starbox{
+            width: 65%;
+            margin: 0 auto;
+          }
         }
         .title {
           height: 1rem;
