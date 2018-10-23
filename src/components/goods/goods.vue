@@ -18,7 +18,7 @@
                 <div class="food-lists"  v-for="(item,index) in goods" :key="index" ref="foodList">
                   <h1 class="title">{{item.name}}</h1>
                   <ul>
-                     <li class="foot-item" v-for="(food,Index) in item.foods" :key="Index">
+                     <li class="foot-item" v-for="(food,Index) in item.foods" :key="Index" @click="showFood(food,$event)">
                        <div class="section1 icon">
                           <img :src="food.icon">
                        </div>
@@ -46,7 +46,7 @@
        <shopcart ref="shopcart" :selectFoods="selectFoods" :deliveryPrice="seller.deliveryPrice" :minPrice="seller.minPrice"></shopcart>
    </div>
    <!-- 商品详情 -->
-   <!-- <food @add="addFood" :food="selectedFood" ref="food"></food> -->
+   <goodDetail @add="addFood" :food="clickedFood" ref="food"></goodDetail>
    </div>
  
 </template>
@@ -231,6 +231,7 @@
 import BScroll from "better-scroll";
 import cartcontrol from "../cartcontrol/cartcontrol";
 import shopcart from "../shopcart/shopcart";
+import goodDetail from "../goodDetail/goodDetail";
 const ERR_OK = 0;
 
 export default {
@@ -241,10 +242,11 @@ export default {
   },
   data() {
     return {
-      length: 0,
+      // length: 0,
       goods: [],
       scrollY: 0,
-      listHeight: []
+      listHeight: [],
+      clickedFood:{}
     };
   },
   created() {
@@ -253,7 +255,7 @@ export default {
       response = response.body;
       if (response.errno === ERR_OK) {
         this.goods = response.data;
-        console.log(this.goods);
+        // console.log(this.goods);
         this.$nextTick(() => {
           this._initScroll();
           this._calculateHeight();
@@ -271,8 +273,21 @@ export default {
       this.foodScroll.scrollToElement(this.$refs.foodList[index], 300);
     },
     addFood(target) {
-      // this._drop(target);
+      this._drop(target);
       // console.log("hj");
+    },
+    showFood(food,event){
+      if(!event._constructed){
+        return;
+      }
+      this.clickedFood=food;
+      this.$refs.food.show();
+      console.log(food)
+    },
+    _drop(target){
+      this.$nextTick(()=>{
+        this.$refs.shopcart.drop(target);
+      })
     },
     _calculateHeight() {
       let foodList = this.$refs.foodList;
@@ -282,7 +297,6 @@ export default {
         height += foodList[i].clientHeight;
         this.listHeight.push(height);
       }
-      console.log(this.listHeight);
       // console.log(foodList.length);
     },
     _initScroll() {
@@ -348,7 +362,8 @@ export default {
   },
   components: {
     cartcontrol,
-    shopcart
+    shopcart,
+    goodDetail
   }
 };
 </script>

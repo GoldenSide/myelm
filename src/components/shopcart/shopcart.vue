@@ -1,7 +1,7 @@
 <template>
     <div>
     <div class="shopcart">
-       <div class="content" @click="toggglelist">
+       <div class="content" @click.stop.prevent="toggglelist">
            <div class="content-left">
                <div class="logo-wrapper">               
                  <div class="logo" :class="{'highlight':totalCount>0}">
@@ -26,7 +26,7 @@
                  <span class="title">购物车</span>
                  <span class="empty" @click="empty">清空</span>
                </div>
-                <div class="list-content">
+                <div class="list-content" ref="listContent">
                    <ul>
                      <li class="food" v-for="(food,index) in selectFoods" :key="index">
                        <span class="name">{{food.name}}</span>
@@ -38,17 +38,26 @@
                    </ul>
                 </div>
              </div>
-       </transition>      
+       </transition>  
+       <div class="ball-wrapper">
+             <div v-for="(ball,index) in balls" :key="index">
+            <transition name="drop" @before-enter="beforeDrop" @enter="dropping" @after-enter="afterDrop">
+              <div class="ball" v-show="ball.show">
+                <div class="inner inner-hook"></div>
+              </div>
+            </transition>   
+            </div> 
+        </div>    
     </div>
        <transition name='fade'>
-            <div class="list-mask" @click="hideList" v-show="listShow"></div>
+            <div class="list-mask" @click.stop.prevent="hideList" v-show="listShow"></div>
        </transition> 
   </div>
 </template>
 
 <script type="text/ecmascript-6">
 import cartcontrol from "../cartcontrol/cartcontrol";
-
+import BScroll from "better-scroll";
 export default {
   props: {
     selectFoods: {
@@ -73,7 +82,14 @@ export default {
   },
   data() {
     return {
-      fold: true
+      fold: true,
+      balls: [
+        { show: false },
+        { show: false },
+        { show: false },
+        { show: false },
+        { show: false }
+      ]
     };
   },
   computed: {
@@ -91,7 +107,6 @@ export default {
       this.selectFoods.forEach(food => {
         count += food.count;
       });
-      console.log(count);
       return count;
     },
     //支付按钮文字
@@ -120,11 +135,65 @@ export default {
         return false;
       }
       let show = !this.fold;
+      if (show) {
+        this.$nextTick(() => {
+          if (!this.scroll) {
+            this.scroll = new BScroll(this.$refs.listContent, {
+              click: true,
+              probeType: 3
+            });
+          }
+        });
+      }
       return show;
     }
   },
   methods: {
-    drop(el) {},
+    drop(el) {
+      for (let i = 0; i < this.balls.length; i++) {
+        if (!this.balls[i].show) {
+          this.balls[i].show = true;
+          this.balls[i].el = el;
+          return;
+        }
+      }
+    },
+    beforeDrop(el) {
+      this.balls.forEach(ele => {
+        if (ele.show) {
+          let rect = ele.el.getBoundingClientRect();
+          let x = rect.left - 50;
+          let y = -(window.innerHeight - rect.top - 60);
+          el.style.display = "";
+          el.style.opacity = 1;
+          el.style.webkitTransform = `translate3d(0,${y}px,0)`;
+          el.style.transform = `translate3d(0,${y}px,0)`;
+          let inner = el.getElementsByClassName("inner-hook")[0];
+          inner.style.webkitTransform = `translate3d(${x}px,0,0)`;
+          inner.style.transform = `translate3d(${x}px,0,0)`;
+        }
+      });
+    },
+    dropping(el, done) {
+      let rf = el.offsetHeight;
+      this.$nextTick(() => {
+        el.style.webkitTransform = "translate3d(0,0,0)";
+        el.style.transform = "translate3d(0,0,0)";
+        el.style.opacity = 0.1;
+        let inner = el.getElementsByClassName("inner-hook")[0];
+        inner.style.webkitTransform = "translate3d(0,0,0)";
+        inner.style.transform = "translate3d(0,0,0)";
+        el.addEventListener("transitionend", done);
+      });
+    },
+    afterDrop(el) {
+      this.balls.forEach(ele => {
+        if (ele.show) {
+          ele.show = false;
+        }
+      });
+      el.style.display = "none";
+    },
     empty() {
       this.selectFoods.forEach(food => {
         food.count = 0;
@@ -140,8 +209,7 @@ export default {
       }
     },
     addFood(target) {
-      // this.drop(target);
-      console.log("kl");
+      this.drop(target);
     },
     //切换显示
     toggglelist() {
@@ -233,7 +301,6 @@ export default {
         height: 100%;
         line-height: 1.3rem;
         font-size: 0.36rem;
-        // margin-left: 0.1rem;
         color: #72777d;
         float: left;
       }
@@ -294,14 +361,15 @@ export default {
       }
     }
     .list-content {
-      width: 100%;
+      width: auto;
       box-sizing: border-box;
-      padding: 0 0.3rem;
+      padding: 0 0.3rem ;
       background: #fff;
+      max-height: 3rem;
+      overflow: hidden;
       ul {
         width: 100%;
         padding: 0.2rem 0;
-
         .food {
           width: 100%;
           display: flex;
@@ -316,17 +384,32 @@ export default {
             font-size: 0.4rem;
           }
           .price {
-            flex: 0.3;
+            flex: 0.22;
             color: #f01414;
             font-size: 0.36rem;
           }
           .cartcontrol {
-            flex: 0.2;
+            flex: 0.28;
             box-sizing: border-box;
-            padding: 0.05rem 0;
+            padding: 0.05rem 0.3rem;
             font-size: 0.34rem;
           }
         }
+      }
+    }
+  }
+  .ball-wrapper {
+    .ball {
+      position: fixed;
+      left: 1.49rem;
+      bottom: 1.31rem;
+      transition: all 0.3s cubic-bezier(0.49, -0.29, 0.75, 0.41);
+      .inner {
+        width: 0.4rem;
+        height: 0.4rem;
+        border-radius: 50%;
+        transition: all 0.3s linear;
+        background: rgb(0, 160, 220);
       }
     }
   }
